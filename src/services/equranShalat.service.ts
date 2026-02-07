@@ -44,7 +44,7 @@ export async function getPrayerTimesFromEquran(params: {
   if (!row) {
     throw new Error(`Jadwal tidak ditemukan untuk tanggal ${params.date}`);
   }
-  const dhuha = row.dhuha as string | undefined;
+  const dhuha = row.dhuha;
 
   // handle perbedaan key yang mungkin muncul
   const dzuhur = (row.dzuhur ?? row.dhuhr) as string | undefined;
