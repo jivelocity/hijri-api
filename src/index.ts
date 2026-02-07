@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import moment from "moment-hijri";
+import "moment/locale/id";
 
 type ErrorResponse = {
   status: "error";
@@ -8,21 +9,20 @@ type ErrorResponse = {
 
 type HijriItem = {
   date: string; // YYYY-MM-DD
-  day_name: string; // Saturday
-  gregorian_formatted: string; // 07 February 2026
+  day_name: string; // Senin, Selasa, Ahad
+  gregorian_formatted: string; // 07 Februari 2026
 
   hijri_year: number; // 1447
   hijri_month: number; // 8
   hijri_day: number; // 19
-  hijri_formatted: string; // Latin: 19 Sha’ban 1447
-  hijri_arabic: string; // Arab: ١٩ شعبان ١٤٤٧
+  hijri_formatted: string; // Latin
+  hijri_arabic: string; // Arab
 };
 
-// Default locale agar Gregorian tidak ikut jadi Arab
-moment.locale("en");
+// Default locale Indonesia
+moment.locale("id");
 
-// Konversi digit 0-9 menjadi Arab-Indic (٠١٢٣٤٥٦٧٨٩)
-// Ini bikin hasil konsisten antara local dan deploy (mis. Vercel)
+// Konversi digit 0–9 ke Arab-Indic (٠١٢٣٤٥٦٧٨٩)
 function toArabicIndicDigits(input: string): string {
   const map: Record<string, string> = {
     "0": "٠",
@@ -36,20 +36,28 @@ function toArabicIndicDigits(input: string): string {
     "8": "٨",
     "9": "٩",
   };
-
   return input.replace(/[0-9]/g, (d) => map[d] ?? d);
 }
 
+// Mapping hari: Minggu → Ahad
+function normalizeDayName(dayName: string): string {
+  if (dayName.toLowerCase() === "minggu") {
+    return "Ahad";
+  }
+  return dayName;
+}
+
 function buildHijriItem(m: moment.Moment): HijriItem {
-  const g = m.clone().locale("en");
+  const g = m.clone().locale("id");
   const hLatin = m.clone().locale("en");
   const hArabic = m.clone().locale("ar-sa");
 
+  const dayNameId = normalizeDayName(g.format("dddd"));
   const arabicRaw = hArabic.format("iDD iMMMM iYYYY");
 
   return {
     date: g.format("YYYY-MM-DD"),
-    day_name: g.format("dddd"),
+    day_name: dayNameId,
     gregorian_formatted: g.format("DD MMMM YYYY"),
 
     hijri_year: Number(hLatin.format("iYYYY")),
@@ -65,8 +73,6 @@ const app = new Hono();
 /**
  * GET /hijri
  * ?date=YYYY-MM-DD (optional)
- *
- * Response: HijriItem[] (array, sesuai format yang kamu mau)
  */
 app.get("/hijri", (c) => {
   const dateStr = c.req.query("date");
