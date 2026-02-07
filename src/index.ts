@@ -6,25 +6,23 @@ type ErrorResponse = {
   message: string;
 };
 
-type SuccessResponse = {
-  status: "success";
-  gregorian: {
-    iso: string;
-    dayName: string;
-    formatted: string;
-  };
-  hijri: {
-    iYYYY: number;
-    iMM: number;
-    iDD: number;
-    formatted: string; // Latin
-    arabic: string; // Arab (dengan angka Arab-Indic)
-  };
+type HijriItem = {
+  date: string; // YYYY-MM-DD
+  day_name: string; // Saturday
+  gregorian_formatted: string; // 07 February 2026
+
+  hijri_year: number; // 1447
+  hijri_month: number; // 8
+  hijri_day: number; // 19
+  hijri_formatted: string; // Latin: 19 Sha’ban 1447
+  hijri_arabic: string; // Arab: ١٩ شعبان ١٤٤٧
 };
 
+// Default locale agar Gregorian tidak ikut jadi Arab
 moment.locale("en");
 
-// ✅ konversi angka 0-9 ke Arab-Indic (٠١٢٣٤٥٦٧٨٩)
+// Konversi digit 0-9 menjadi Arab-Indic (٠١٢٣٤٥٦٧٨٩)
+// Ini bikin hasil konsisten antara local dan deploy (mis. Vercel)
 function toArabicIndicDigits(input: string): string {
   const map: Record<string, string> = {
     "0": "٠",
@@ -38,40 +36,38 @@ function toArabicIndicDigits(input: string): string {
     "8": "٨",
     "9": "٩",
   };
+
   return input.replace(/[0-9]/g, (d) => map[d] ?? d);
 }
 
-function buildSuccessResponse(m: moment.Moment): SuccessResponse {
+function buildHijriItem(m: moment.Moment): HijriItem {
   const g = m.clone().locale("en");
+  const hLatin = m.clone().locale("en");
+  const hArabic = m.clone().locale("ar-sa");
 
-  const hijriLatin = m.clone().locale("en");
-  const hijriArabicLocale = m.clone().locale("ar-sa");
-
-  const latinHijriText = hijriLatin.format("iDD iMMMM iYYYY");
-
-  // Nama bulan Arab dari locale ar-sa, tapi angkanya kita pastikan Arab-Indic
-  const arabicHijriTextRaw = hijriArabicLocale.format("iDD iMMMM iYYYY");
-  const arabicHijriText = toArabicIndicDigits(arabicHijriTextRaw);
+  const arabicRaw = hArabic.format("iDD iMMMM iYYYY");
 
   return {
-    status: "success",
-    gregorian: {
-      iso: g.format("YYYY-MM-DD"),
-      dayName: g.format("dddd"),
-      formatted: g.format("DD MMMM YYYY"),
-    },
-    hijri: {
-      iYYYY: Number(hijriLatin.format("iYYYY")),
-      iMM: Number(hijriLatin.format("iMM")),
-      iDD: Number(hijriLatin.format("iDD")),
-      formatted: latinHijriText,
-      arabic: arabicHijriText,
-    },
+    date: g.format("YYYY-MM-DD"),
+    day_name: g.format("dddd"),
+    gregorian_formatted: g.format("DD MMMM YYYY"),
+
+    hijri_year: Number(hLatin.format("iYYYY")),
+    hijri_month: Number(hLatin.format("iMM")),
+    hijri_day: Number(hLatin.format("iDD")),
+    hijri_formatted: hLatin.format("iDD iMMMM iYYYY"),
+    hijri_arabic: toArabicIndicDigits(arabicRaw),
   };
 }
 
 const app = new Hono();
 
+/**
+ * GET /hijri
+ * ?date=YYYY-MM-DD (optional)
+ *
+ * Response: HijriItem[] (array, sesuai format yang kamu mau)
+ */
 app.get("/hijri", (c) => {
   const dateStr = c.req.query("date");
   const m = dateStr ? moment(dateStr, "YYYY-MM-DD", true) : moment();
@@ -84,9 +80,11 @@ app.get("/hijri", (c) => {
     return c.json(res, 400);
   }
 
-  return c.json(buildSuccessResponse(m));
+  const result: HijriItem[] = [buildHijriItem(m)];
+  return c.json(result);
 });
 
+// Bun server entry
 export default {
   port: 3000,
   fetch: app.fetch,
