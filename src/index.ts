@@ -1,28 +1,23 @@
 import { Hono } from "hono";
 import moment from "moment-hijri";
-import "moment/locale/id";
+import "moment/locale/id.js"; // ✅ FIX untuk Vercel (Node ESM)
 
-type ErrorResponse = {
-  status: "error";
-  message: string;
-};
+type ErrorResponse = { status: "error"; message: string };
 
 type HijriItem = {
   date: string; // YYYY-MM-DD
   day_name: string; // Senin, Selasa, Ahad
   gregorian_formatted: string; // 07 Februari 2026
-
-  hijri_year: number; // 1447
-  hijri_month: number; // 8
-  hijri_day: number; // 19
+  hijri_year: number;
+  hijri_month: number;
+  hijri_day: number;
   hijri_formatted: string; // Latin
-  hijri_arabic: string; // Arab
+  hijri_arabic: string; // Arab digits + arab month
 };
 
-// Default locale Indonesia
+// set default locale indonesia
 moment.locale("id");
 
-// Konversi digit 0–9 ke Arab-Indic (٠١٢٣٤٥٦٧٨٩)
 function toArabicIndicDigits(input: string): string {
   const map: Record<string, string> = {
     "0": "٠",
@@ -39,12 +34,8 @@ function toArabicIndicDigits(input: string): string {
   return input.replace(/[0-9]/g, (d) => map[d] ?? d);
 }
 
-// Mapping hari: Minggu → Ahad
 function normalizeDayName(dayName: string): string {
-  if (dayName.toLowerCase() === "minggu") {
-    return "Ahad";
-  }
-  return dayName;
+  return dayName.toLowerCase() === "minggu" ? "Ahad" : dayName;
 }
 
 function buildHijriItem(m: moment.Moment): HijriItem {
@@ -52,28 +43,20 @@ function buildHijriItem(m: moment.Moment): HijriItem {
   const hLatin = m.clone().locale("en");
   const hArabic = m.clone().locale("ar-sa");
 
-  const dayNameId = normalizeDayName(g.format("dddd"));
-  const arabicRaw = hArabic.format("iDD iMMMM iYYYY");
-
   return {
     date: g.format("YYYY-MM-DD"),
-    day_name: dayNameId,
+    day_name: normalizeDayName(g.format("dddd")),
     gregorian_formatted: g.format("DD MMMM YYYY"),
-
     hijri_year: Number(hLatin.format("iYYYY")),
     hijri_month: Number(hLatin.format("iMM")),
     hijri_day: Number(hLatin.format("iDD")),
     hijri_formatted: hLatin.format("iDD iMMMM iYYYY"),
-    hijri_arabic: toArabicIndicDigits(arabicRaw),
+    hijri_arabic: toArabicIndicDigits(hArabic.format("iDD iMMMM iYYYY")),
   };
 }
 
 const app = new Hono();
 
-/**
- * GET /hijri
- * ?date=YYYY-MM-DD (optional)
- */
 app.get("/hijri", (c) => {
   const dateStr = c.req.query("date");
   const m = dateStr ? moment(dateStr, "YYYY-MM-DD", true) : moment();
@@ -86,12 +69,8 @@ app.get("/hijri", (c) => {
     return c.json(res, 400);
   }
 
-  const result: HijriItem[] = [buildHijriItem(m)];
-  return c.json(result);
+  return c.json([buildHijriItem(m)]);
 });
 
-// Bun server entry
-export default {
-  port: 3000,
-  fetch: app.fetch,
-};
+// ✅ untuk Vercel: export app (jangan export { port, fetch } ala Bun)
+export default app;
