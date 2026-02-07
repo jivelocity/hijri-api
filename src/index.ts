@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import moment from "moment-hijri"; // ✅ penting: ambil moment dari package ini (bukan moment biasa)
+import moment from "moment-hijri";
 
 type ErrorResponse = {
   status: "error";
@@ -18,19 +18,40 @@ type SuccessResponse = {
     iMM: number;
     iDD: number;
     formatted: string; // Latin
-    arabic: string; // Arab
+    arabic: string; // Arab (dengan angka Arab-Indic)
   };
 };
 
-// ✅ pastikan default locale tidak kebawa arab
 moment.locale("en");
 
+// ✅ konversi angka 0-9 ke Arab-Indic (٠١٢٣٤٥٦٧٨٩)
+function toArabicIndicDigits(input: string): string {
+  const map: Record<string, string> = {
+    "0": "٠",
+    "1": "١",
+    "2": "٢",
+    "3": "٣",
+    "4": "٤",
+    "5": "٥",
+    "6": "٦",
+    "7": "٧",
+    "8": "٨",
+    "9": "٩",
+  };
+  return input.replace(/[0-9]/g, (d) => map[d] ?? d);
+}
+
 function buildSuccessResponse(m: moment.Moment): SuccessResponse {
-  // pakai clone + set locale biar tidak saling “nular”
   const g = m.clone().locale("en");
 
   const hijriLatin = m.clone().locale("en");
-  const hijriArabic = m.clone().locale("ar-sa");
+  const hijriArabicLocale = m.clone().locale("ar-sa");
+
+  const latinHijriText = hijriLatin.format("iDD iMMMM iYYYY");
+
+  // Nama bulan Arab dari locale ar-sa, tapi angkanya kita pastikan Arab-Indic
+  const arabicHijriTextRaw = hijriArabicLocale.format("iDD iMMMM iYYYY");
+  const arabicHijriText = toArabicIndicDigits(arabicHijriTextRaw);
 
   return {
     status: "success",
@@ -43,18 +64,14 @@ function buildSuccessResponse(m: moment.Moment): SuccessResponse {
       iYYYY: Number(hijriLatin.format("iYYYY")),
       iMM: Number(hijriLatin.format("iMM")),
       iDD: Number(hijriLatin.format("iDD")),
-      formatted: hijriLatin.format("iDD iMMMM iYYYY"),
-      arabic: hijriArabic.format("iDD iMMMM iYYYY"),
+      formatted: latinHijriText,
+      arabic: arabicHijriText,
     },
   };
 }
 
 const app = new Hono();
 
-/**
- * GET /hijri
- * ?date=YYYY-MM-DD (optional)
- */
 app.get("/hijri", (c) => {
   const dateStr = c.req.query("date");
   const m = dateStr ? moment(dateStr, "YYYY-MM-DD", true) : moment();
@@ -70,7 +87,6 @@ app.get("/hijri", (c) => {
   return c.json(buildSuccessResponse(m));
 });
 
-// Bun server entry
 export default {
   port: 3000,
   fetch: app.fetch,
