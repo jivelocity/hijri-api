@@ -9,7 +9,8 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "dev": "bun run src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts"
   },
   "dependencies": {
     "@types/moment-hijri": "^2.1.4",
