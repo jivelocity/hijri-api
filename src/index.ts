@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { hijriRoute } from "./routes/hijri.route";
-import { prayerRoute } from "./routes/prayer.route";
+import { hijriRoute } from "./routes/hijri.route.ts";
+import { prayerRoute } from "./routes/prayer.route.ts";
 
 export const app = new Hono();
 

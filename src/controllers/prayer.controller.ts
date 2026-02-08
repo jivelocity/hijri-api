@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { getPrayerTimesFromEquran } from "../services/equranShalat.service";
+import { getPrayerTimesFromEquran } from "../services/equranShalat.service.ts";
 import { parseDateParam } from "../utils/date.ts";
 
 export async function getPrayerTimes(c: Context) {

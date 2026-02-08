@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getPrayerTimes } from "../controllers/prayer.controller";
+import { getPrayerTimes } from "../controllers/prayer.controller.ts";
 
 export const prayerRoute = new Hono();
 

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getHijri } from "../controllers/hijri.controller";
+import { getHijri } from "../controllers/hijri.controller.ts";
 
 export const hijriRoute = new Hono();
 
