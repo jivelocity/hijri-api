@@ -1,6 +1,6 @@
 import type { Context } from "hono";
-import { buildHijriItem } from "../services/hijri.service.ts";
-import { parseDateParam } from "../utils/date.ts";
+import { buildHijriItem } from "../services/hijri.service";
+import { parseDateParam } from "../utils/date";
 
 export function getHijri(c: Context) {
   const dateStr = c.req.query("date");

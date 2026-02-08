@@ -1,7 +1,7 @@
 import moment from "moment-hijri";
 import "moment/locale/id.js";
 import type { HijriItem } from "../types/hijri";
-import { normalizeDayNameId, toArabicIndicDigits } from "../utils/digits.ts";
+import { normalizeDayNameId, toArabicIndicDigits } from "../utils/digits";
 
 moment.locale("id");
 
