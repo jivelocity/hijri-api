@@ -8,6 +8,9 @@
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
+  "scripts": {
+    "dev": "bun run api/index.ts"
+  },
   "dependencies": {
     "@types/moment-hijri": "^2.1.4",
     "adhan": "^4.4.3",
@@ -17,3 +20,4 @@
     "moment-timezone": "^0.6.0"
   }
 }
+
