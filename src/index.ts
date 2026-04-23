@@ -27,6 +27,32 @@ function normalizeDayNameId(day: string): string {
   return day.toLowerCase() === "minggu" ? "Ahad" : day;
 }
 
+const HIJRI_MONTH_NAMES_ID = [
+  "Muharram",
+  "Shafar",
+  "Rabi'ul Awwal",
+  "Rabi'ul Akhir",
+  "Jumadil Awwal",
+  "Jumadil Akhir",
+  "Rajab",
+  "Sya'ban",
+  "Ramadhan",
+  "Syawwal",
+  "Dzulqa'dah",
+  "Dzulhijjah",
+] as const;
+
+function formatHijriDateId(input: moment.Moment): string {
+  const monthIndex = Number(input.format("iMM")) - 1;
+  const monthName = HIJRI_MONTH_NAMES_ID[monthIndex];
+
+  if (!monthName) {
+    throw new Error("Invalid Hijri month generated");
+  }
+
+  return `${input.format("iDD")} ${monthName} ${input.format("iYYYY")}`;
+}
+
 function toArabicIndicDigits(input: string): string {
   const map: Record<string, string> = {
     "0": "٠",
@@ -57,7 +83,7 @@ app.get("/hijri", (c) => {
   const m = parseDateParam(c.req.query("date"));
 
   const g = m.clone().locale("id");
-  const hLatin = m.clone().locale("en");
+  const hLatin = m.clone().locale("id");
   const hArabic = m.clone().locale("ar-sa");
 
   return c.json([
@@ -69,7 +95,7 @@ app.get("/hijri", (c) => {
       hijri_year: Number(hLatin.format("iYYYY")),
       hijri_month: Number(hLatin.format("iMM")),
       hijri_day: Number(hLatin.format("iDD")),
-      hijri_formatted: hLatin.format("iDD iMMMM iYYYY"),
+      hijri_formatted: formatHijriDateId(hLatin),
       hijri_arabic: toArabicIndicDigits(hArabic.format("iDD iMMMM iYYYY")),
     },
   ]);
